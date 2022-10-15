@@ -70,7 +70,6 @@ func Unzeep(zipFile *zip.File) chan *zip.File {
 		} else {
 			unzipChannel <- zipFile
 		}
-		close(unzipChannel)
 	}()
 	return unzipChannel
 }

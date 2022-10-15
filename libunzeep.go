@@ -37,18 +37,27 @@ func OpenChannel(filename string) (chan *zip.File, error) {
 func Unzeep(zipFile *zip.File) chan *zip.File {
 	unzipChannel := make(chan *zip.File)
 	go func() {
+		defer close(unzipChannel)
 		if strings.HasSuffix(zipFile.Name, "zip") {
 			buffer := new(bytes.Buffer)
 			file, err := zipFile.Open()
-			buffer.ReadFrom(file)
-			file.Close()
+			if err != nil {
+				return
+			}
+			_, err = buffer.ReadFrom(file)
+			if err != nil {
+				return
+			}
+			err = file.Close()
+			if err != nil {
+				return
+			}
 			inMemoryFile := buffer.Bytes()
 			inMemorySize := int64(len(inMemoryFile))
 			inMemoryReader := bytes.NewReader(inMemoryFile)
 			innerFiles, err := zip.NewReader(inMemoryReader, inMemorySize)
 			if err != nil {
 				unzipChannel <- zipFile
-				close(unzipChannel)
 				return
 			}
 			for _, innerFile := range innerFiles.File {
